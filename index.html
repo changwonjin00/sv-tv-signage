@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Acura Dealership — Showroom Display</title>
+<meta name="viewport" content="width=1920, initial-scale=1, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --color-primary:#0b0b0d;
+    --color-accent:#c8102e;
+    --color-text:#f5f5f5;
+    --color-ticker-text:#0b0b0d;
+    --ticker-h:8.2vh;
+    --side-w:15vw;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{
+    width:100vw; height:100vh;
+    overflow:hidden;
+    background:#000;
+    font-family:'Inter',sans-serif;
+    color:var(--color-text);
+  }
+  #stage{
+    position:relative;
+    width:100vw; height:100vh;
+    display:grid;
+    grid-template-columns:1fr var(--side-w);
+    grid-template-rows:1fr var(--ticker-h);
+    grid-template-areas:
+      "media side"
+      "ticker ticker";
+    background:var(--color-primary);
+  }
+
+  /* ---------- MEDIA ZONE ---------- */
+  #media-zone{
+    grid-area:media;
+    position:relative;
+    background:#000;
+    overflow:hidden;
+  }
+  #media-zone iframe{
+    position:absolute; top:50%; left:50%;
+    width:100%; height:100%;
+    transform:translate(-50%,-50%);
+    border:0;
+    pointer-events:none;
+  }
+  #slideshow{
+    position:absolute; inset:0;
+  }
+  #slideshow img{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:cover;
+    opacity:0;
+    transition:opacity 1.2s ease-in-out;
+  }
+  #slideshow img.active{ opacity:1; }
+  #media-empty{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:1vh;
+    color:#555;
+    font-family:'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+  }
+
+  /* ---------- SIDE COLUMN ---------- */
+  #side-col{
+    grid-area:side;
+    background:linear-gradient(180deg,#101012 0%, var(--color-primary) 55%);
+    border-left:2px solid var(--color-accent);
+    display:flex;
+    flex-direction:column;
+    gap:2.4vh;
+    padding:2.6vh 1.3vw;
+  }
+  .brand{
+    display:flex;
+    flex-direction:column;
+    gap:.6vh;
+    padding-bottom:2vh;
+    border-bottom:1px solid rgba(255,255,255,.12);
+  }
+  .brand .mark{
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:2.3vh;
+    letter-spacing:.06em;
+  }
+  .brand .mark span{ color:var(--color-accent); }
+  .brand .mark img{
+    display:block;
+    max-height:5vh;
+    max-width:100%;
+    width:auto;
+  }
+  .brand .sub{
+    font-size:1.3vh;
+    color:rgba(245,245,245,.6);
+    font-weight:400;
+  }
+
+  .clock{
+    padding-bottom:2vh;
+    border-bottom:1px solid rgba(255,255,255,.12);
+    text-align:center;
+  }
+  .clock .time{
+    font-family:'Oswald',sans-serif;
+    font-size:4.2vh;
+    font-weight:600;
+    line-height:1;
+  }
+  .clock .date{
+    margin-top:.8vh;
+    font-size:1.4vh;
+    color:rgba(245,245,245,.65);
+  }
+
+  .weather{
+    padding-bottom:2vh;
+    border-bottom:1px solid rgba(255,255,255,.12);
+    display:flex;
+    flex-direction:column;
+    gap:1vh;
+  }
+  .weather .city{
+    font-size:1.4vh;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:rgba(245,245,245,.55);
+  }
+  .weather .temp-row{
+    display:flex;
+    align-items:center;
+    gap:.8vw;
+  }
+  .weather .temp-row img{
+    width:5.4vh; height:5.4vh;
+    filter:drop-shadow(0 0 6px rgba(0,0,0,.4));
+  }
+  .weather .temp{
+    font-family:'Oswald',sans-serif;
+    font-size:5vh;
+    font-weight:600;
+    line-height:1;
+  }
+  .weather .cond{
+    font-size:1.5vh;
+    color:rgba(245,245,245,.75);
+    text-transform:capitalize;
+  }
+  .weather .lohi{
+    font-size:1.3vh;
+    color:rgba(245,245,245,.55);
+  }
+  .forecast-row{
+    display:flex;
+    gap:.7vw;
+    margin-top:.6vh;
+    overflow:hidden;
+  }
+  .forecast-chip{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:.2vh;
+    flex:1 1 0;
+    min-width:0;
+  }
+  .forecast-chip .time{
+    font-size:1vh;
+    color:rgba(245,245,245,.5);
+    text-transform:uppercase;
+  }
+  .forecast-chip img{ width:2.8vh; height:2.8vh; }
+  .forecast-chip .temp{
+    font-size:1.2vh;
+    font-weight:600;
+    color:rgba(245,245,245,.85);
+  }
+
+  .now-playing{
+    display:flex;
+    flex-direction:column;
+    gap:1vh;
+  }
+  .now-playing .label{
+    font-size:1.2vh;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:rgba(245,245,245,.45);
+  }
+  .now-title-wrap{
+    overflow:hidden;
+    position:relative;
+    height:1.7vh;
+  }
+  .now-title-track{
+    position:absolute;
+    top:0; left:0;
+    display:flex;
+    white-space:nowrap;
+    will-change:transform;
+  }
+  .now-title-track.scrolling{
+    animation:scroll-left linear infinite;
+  }
+  .now-title-track span{
+    font-size:1.4vh;
+    font-weight:600;
+    color:rgba(245,245,245,.9);
+    padding-right:3vw;
+  }
+  .asset-dots{
+    display:flex;
+    flex-wrap:wrap;
+    gap:.8vh;
+  }
+  .asset-dots .dot{
+    width:.9vh; height:.9vh;
+    border-radius:50%;
+    background:rgba(245,245,245,.22);
+    transition:background .3s;
+  }
+  .asset-dots .dot.active{ background:var(--color-accent); }
+
+  /* ---------- REVIEWS ---------- */
+  .reviews-widget{
+    margin-top:auto;
+    padding-top:2.4vh;
+    border-top:1px solid rgba(255,255,255,.12);
+    min-height:22vh;
+    display:flex;
+    flex-direction:column;
+  }
+  .reviews-widget .label{
+    font-size:1.3vh;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:rgba(245,245,245,.45);
+    margin-bottom:1.4vh;
+  }
+  .review-card{
+    opacity:0;
+    transition:opacity 1s ease-in-out;
+    flex:1;
+  }
+  .review-card.active{ opacity:1; }
+  .review-card .stars{
+    color:#f5c518;
+    font-size:2vh;
+    letter-spacing:.15em;
+  }
+  .review-card .author{
+    font-size:1.6vh;
+    font-weight:600;
+    color:rgba(245,245,245,.95);
+    margin-top:1vh;
+  }
+  .review-card .text{
+    font-size:1.5vh;
+    line-height:1.5;
+    color:rgba(245,245,245,.75);
+    margin-top:.8vh;
+    display:-webkit-box;
+    -webkit-line-clamp:8;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .review-card .text.medium{ font-size:1.35vh; line-height:1.45; }
+  .review-card .text.long{
+    font-size:1.2vh;
+    line-height:1.4;
+    letter-spacing:-.01em;
+    -webkit-line-clamp:9;
+  }
+
+  /* ---------- TICKER ---------- */
+  #ticker-bar{
+    grid-area:ticker;
+    background:var(--color-accent);
+    display:flex;
+    align-items:center;
+    overflow:hidden;
+    position:relative;
+  }
+  .ticker-flag{
+    flex:0 0 auto;
+    height:100%;
+    display:flex;
+    align-items:center;
+    padding:0 2vw;
+    background:#000;
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:2.6vh;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:#fff;
+    z-index:2;
+  }
+  .ticker-flag span{ color:var(--color-accent); }
+  .ticker-viewport{
+    flex:1 1 auto;
+    height:100%;
+    overflow:hidden;
+    position:relative;
+  }
+  .ticker-track{
+    position:absolute;
+    top:0; left:0;
+    height:100%;
+    display:flex;
+    align-items:center;
+    white-space:nowrap;
+    will-change:transform;
+    animation:scroll-left linear infinite;
+  }
+  .ticker-track span{
+    padding:0 4vw 0 0;
+    font-family:'Oswald',sans-serif;
+    font-size:2.4vh;
+    font-weight:500;
+    letter-spacing:.02em;
+    color:var(--color-ticker-text);
+  }
+  @keyframes scroll-left{
+    from{ transform:translateX(0); }
+    to{ transform:translateX(-50%); }
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+
+  <div id="media-zone">
+    <div id="media-empty">
+      <div style="font-size:3.4vh;">No media configured</div>
+      <div style="font-size:1.6vh;">Add photos or a YouTube link from the admin dashboard</div>
+    </div>
+    <div id="youtube-player"></div>
+    <div id="slideshow"></div>
+  </div>
+
+  <aside id="side-col">
+    <div class="brand">
+      <div class="mark" id="dealership-name">ACURA <span>OF&nbsp;YOUR&nbsp;CITY</span></div>
+      <div class="sub" id="tagline">Precision Crafted Performance</div>
+    </div>
+
+    <div class="clock">
+      <div class="time" id="clock-time">--:--</div>
+      <div class="date" id="clock-date">-</div>
+    </div>
+
+    <div class="weather" id="weather-block">
+      <div class="city" id="weather-city">Weather unavailable</div>
+      <div class="temp-row">
+        <img id="weather-icon" src="" alt="" style="display:none;">
+        <div class="temp" id="weather-temp">—</div>
+      </div>
+      <div class="cond" id="weather-cond"></div>
+      <div class="lohi" id="weather-lohi"></div>
+      <div class="forecast-row" id="forecast-row"></div>
+    </div>
+
+    <div class="now-playing">
+      <div class="label">Now Playing</div>
+      <div class="now-title-wrap" id="now-title-wrap" style="display:none;">
+        <div class="now-title-track" id="now-title-track">
+          <span id="now-title-a"></span>
+          <span id="now-title-b" style="display:none;"></span>
+        </div>
+      </div>
+      <div class="asset-dots" id="asset-dots"></div>
+    </div>
+
+    <div class="reviews-widget" id="reviews-widget" style="display:none;">
+      <div class="label">Customer Reviews</div>
+      <div class="review-card" id="review-card"></div>
+    </div>
+  </aside>
+
+  <div id="ticker-bar">
+    <div class="ticker-flag">ACURA<span>•</span>NEWS</div>
+    <div class="ticker-viewport">
+      <div class="ticker-track" id="ticker-track">
+        <span id="ticker-text-a">Welcome to the dealership.</span>
+        <span id="ticker-text-b">Welcome to the dealership.</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { firebaseConfig, CONFIG_COLLECTION, CONFIG_DOC } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ---------------- Clock ----------------
+function tickClock(){
+  const now = new Date();
+  document.getElementById('clock-time').textContent =
+    now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  document.getElementById('clock-date').textContent =
+    now.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
+}
+tickClock();
+setInterval(tickClock, 1000 * 15);
+
+// ---------------- Weather ----------------
+// Resolves the configured city through OpenWeatherMap's Geocoding API
+// first, then fetches weather by lat/lon. This avoids the free /weather
+// endpoint's picky "q=City,State,Country" matching (state codes are only
+// documented as reliable for US locations), which was the main cause of
+// "Weather unavailable" for cities outside the US, and surfaces the
+// actual API error message instead of a generic failure.
+let lastWeatherKey = "";
+let weatherTimer = null;
+let geoCache = null; // { key: "city|apiKey", lat, lon, name }
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+async function resolveCity(city, apiKey){
+  const cacheKey = city + "|" + apiKey;
+  if(geoCache && geoCache.key === cacheKey) return geoCache;
+  const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(city)}&limit=1&appid=${apiKey}`;
+  const res = await fetch(geoUrl);
+  const data = await res.json().catch(() => null);
+  if(!res.ok) throw new Error((data && data.message) || `Geocoding failed (${res.status})`);
+  if(!Array.isArray(data) || data.length === 0) throw new Error(`City "${city}" not found`);
+  geoCache = { key: cacheKey, lat: data[0].lat, lon: data[0].lon, name: data[0].name };
+  return geoCache;
+}
+
+async function refreshForecast(loc, units, apiKey){
+  const row = document.getElementById('forecast-row');
+  try{
+    const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${loc.lat}&lon=${loc.lon}&units=${units}&appid=${apiKey}`;
+    const res = await fetch(url);
+    const data = await res.json().catch(() => null);
+    if(!res.ok) throw new Error((data && data.message) || `Forecast request failed (${res.status})`);
+    const unitSymbol = units === "imperial" ? "°" : units === "metric" ? "°" : "K";
+    const slots = (data.list || []).slice(0, 5);
+    row.innerHTML = slots.map(slot => {
+      const time = new Date(slot.dt * 1000).toLocaleTimeString([], { hour:'numeric' });
+      const icon = slot.weather?.[0]?.icon;
+      const temp = Math.round(slot.main.temp) + unitSymbol;
+      return `<div class="forecast-chip">
+        <div class="time">${time}</div>
+        ${icon ? `<img src="https://openweathermap.org/img/wn/${icon}.png" alt="">` : ''}
+        <div class="temp">${temp}</div>
+      </div>`;
+    }).join('');
+  }catch(err){
+    console.error("Forecast error:", err);
+    row.innerHTML = '';
+  }
+}
+
+async function refreshWeather(cfg){
+  const apiKey = cfg.weatherApiKey;
+  const city = cfg.weatherCity;
+  const units = cfg.weatherUnits || "imperial";
+  const cityEl = document.getElementById('weather-city');
+  const tempEl = document.getElementById('weather-temp');
+  const condEl = document.getElementById('weather-cond');
+  const lohiEl = document.getElementById('weather-lohi');
+  const iconEl = document.getElementById('weather-icon');
+  const forecastEl = document.getElementById('forecast-row');
+
+  if(!apiKey || !city){
+    cityEl.textContent = "Weather not configured";
+    tempEl.textContent = "—";
+    condEl.textContent = "";
+    lohiEl.textContent = "";
+    iconEl.style.display = "none";
+    forecastEl.innerHTML = "";
+    return true; // not an error — just unconfigured — so this doesn't trigger backoff
+  }
+
+  try{
+    const loc = await resolveCity(city, apiKey);
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${loc.lat}&lon=${loc.lon}&units=${units}&appid=${apiKey}`;
+    const res = await fetch(url);
+    const data = await res.json().catch(() => null);
+    if(!res.ok) throw new Error((data && data.message) || `Weather request failed (${res.status})`);
+    const unitSymbol = units === "imperial" ? "°F" : units === "metric" ? "°C" : "K";
+
+    cityEl.textContent = loc.name || data.name || city;
+    tempEl.textContent = Math.round(data.main.temp) + unitSymbol;
+    condEl.textContent = data.weather?.[0]?.description || "";
+    lohiEl.textContent = `H: ${Math.round(data.main.temp_max)}${unitSymbol}  L: ${Math.round(data.main.temp_min)}${unitSymbol}`;
+    if(data.weather?.[0]?.icon){
+      iconEl.src = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+      iconEl.style.display = "block";
+    }
+    await refreshForecast(loc, units, apiKey);
+    return true;
+  }catch(err){
+    console.error(err);
+    geoCache = null; // don't keep a failed lookup cached
+    cityEl.textContent = "Weather error: " + err.message;
+    tempEl.textContent = "—";
+    condEl.textContent = "";
+    lohiEl.textContent = "";
+    iconEl.style.display = "none";
+    forecastEl.innerHTML = "";
+    return false;
+  }
+}
+
+// Self-scheduling refresh (not setInterval) so a run of failures backs
+// off instead of hammering the API/network every 10 minutes regardless.
+// Base interval 10 min; doubles per consecutive failure up to a 60 min
+// ceiling, and resets to 10 min the moment a request succeeds again.
+let weatherFailCount = 0;
+const WEATHER_BASE_INTERVAL_MS = 10 * 60 * 1000;
+const WEATHER_MAX_INTERVAL_MS = 60 * 60 * 1000;
+
+function scheduleWeather(cfg){
+  if(weatherTimer) clearTimeout(weatherTimer);
+  const delay = Math.min(
+    WEATHER_BASE_INTERVAL_MS * Math.pow(2, weatherFailCount),
+    WEATHER_MAX_INTERVAL_MS
+  );
+  weatherTimer = setTimeout(async () => {
+    const ok = await refreshWeather(cfg);
+    weatherFailCount = ok ? 0 : weatherFailCount + 1;
+    scheduleWeather(cfg);
+  }, delay);
+}
+
+function setupWeather(cfg){
+  const key = `${cfg.weatherApiKey}|${cfg.weatherCity}|${cfg.weatherUnits}`;
+  if(key === lastWeatherKey) return;
+  lastWeatherKey = key;
+  weatherFailCount = 0;
+  if(weatherTimer) clearTimeout(weatherTimer);
+  refreshWeather(cfg).then(ok => {
+    weatherFailCount = ok ? 0 : 1;
+    scheduleWeather(cfg);
+  });
+}
+
+// ---------------- Ticker ----------------
+function setTicker(text){
+  const clean = (text && text.trim()) ? text.trim() : "Welcome to the dealership.";
+  document.getElementById('ticker-text-a').textContent = clean;
+  document.getElementById('ticker-text-b').textContent = clean;
+  const track = document.getElementById('ticker-track');
+  // Roughly scale scroll duration to text length so speed stays consistent.
+  const seconds = Math.max(14, clean.length * 0.22);
+  track.style.animationDuration = seconds + "s";
+}
+
+// ---------------- Colors ----------------
+function applyColors(colors){
+  const root = document.documentElement.style;
+  if(colors?.primary) root.setProperty('--color-primary', colors.primary);
+  if(colors?.accent) root.setProperty('--color-accent', colors.accent);
+  if(colors?.text) root.setProperty('--color-text', colors.text);
+  if(colors?.ticker) root.setProperty('--color-ticker-text', colors.ticker);
+}
+
+// ---------------- Branding (dealership name text or logo image) ----------------
+function applyBranding(cfg){
+  const el = document.getElementById('dealership-name');
+  if(cfg.brandMode === 'logo' && cfg.dealershipLogoUrl){
+    el.innerHTML = `<img src="${cfg.dealershipLogoUrl}" alt="${cfg.dealershipName || 'Dealership logo'}">`;
+  } else {
+    el.textContent = cfg.dealershipName || 'Acura of Your City';
+  }
+  const taglineEl = document.getElementById('tagline');
+  if(cfg.tagline === undefined || cfg.tagline === null){
+    // Never configured — show the original default.
+    taglineEl.textContent = 'Precision Crafted Performance';
+    taglineEl.style.display = '';
+  } else if(cfg.tagline.trim() === ''){
+    // Explicitly cleared and saved blank — hide the line entirely.
+    taglineEl.style.display = 'none';
+  } else {
+    taglineEl.textContent = cfg.tagline;
+    taglineEl.style.display = '';
+  }
+}
+
+// ==================================================================
+// Reviews — a small crossfading carousel of admin-entered reviews.
+// Font size/line-clamp step down for longer text so it always fits
+// the fixed-height card in the side panel.
+// ==================================================================
+let reviews = [];
+let reviewsKey = "";
+let reviewIndex = 0;
+let reviewTimer = null;
+
+function renderReview(){
+  const card = document.getElementById('review-card');
+  const widget = document.getElementById('reviews-widget');
+  if(reviews.length === 0){
+    widget.style.display = 'none';
+    return;
+  }
+  widget.style.display = 'block';
+  const r = reviews[reviewIndex % reviews.length];
+  const rating = Math.max(0, Math.min(5, Math.round(r.rating || 5)));
+  const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+  const len = (r.text || '').length;
+  const sizeClass = len > 200 ? 'long' : len > 100 ? 'medium' : '';
+  card.classList.remove('active');
+  setTimeout(() => {
+    card.innerHTML = `
+      <div class="stars">${stars}</div>
+      <div class="author">${escapeHtml(r.author || 'Anonymous')}</div>
+      <div class="text ${sizeClass}">${escapeHtml(r.text || '')}</div>
+    `;
+    requestAnimationFrame(() => card.classList.add('active'));
+  }, reviews.length > 0 && card.innerHTML ? 400 : 0);
+}
+
+function setupReviews(list){
+  const key = JSON.stringify(list);
+  if(key === reviewsKey) return;
+  reviewsKey = key;
+  reviews = list || [];
+  reviewIndex = 0;
+  if(reviewTimer) clearInterval(reviewTimer);
+  renderReview();
+  if(reviews.length > 1){
+    reviewTimer = setInterval(() => {
+      reviewIndex = (reviewIndex + 1) % reviews.length;
+      renderReview();
+    }, 9000);
+  }
+}
+
+// ==================================================================
+// Asset timeline — a single ordered list mixing photos and YouTube
+// videos/playlists. Photos advance on a timer; videos advance when
+// YouTube reports they've ended.
+// ==================================================================
+let assets = [];
+let slideDuration = 8;
+let currentIndex = 0;
+let timelineKey = "";
+let advanceTimer = null;
+
+let ytPlayer = null;
+let ytReady = false;
+let pendingVideoAsset = null;
+
+const ytTag = document.createElement('script');
+ytTag.src = "https://www.youtube.com/iframe_api";
+document.head.appendChild(ytTag);
+
+window.onYouTubeIframeAPIReady = function(){
+  ytReady = true;
+  if(pendingVideoAsset){
+    const asset = pendingVideoAsset;
+    pendingVideoAsset = null;
+    loadYouTubeAsset(asset);
+  }
+};
+
+// Fallback for the brief window (if any) before admin.html has ever run
+// its one-time migration from the old mode/youtubeUrl/images schema —
+// keeps the TV showing something instead of going blank. Read-only: this
+// never writes back to Firestore, that's admin.html's job.
+function legacyAssetsFallback(cfg){
+  const list = [];
+  if(Array.isArray(cfg.images)){
+    cfg.images.forEach((img, i) => {
+      list.push({ id: 'legacy-img-' + i, type:'image', url: img.url, name: img.name, duration: null });
+    });
+  }
+  if(cfg.youtubeUrl){
+    try{
+      const u = new URL(cfg.youtubeUrl.trim());
+      const listId = u.searchParams.get('list');
+      const videoId = u.searchParams.get('v') || (u.hostname.includes('youtu.be') ? u.pathname.slice(1) : null);
+      if(listId) list.push({ id:'legacy-yt-list', type:'youtube', videoId:listId, listType:'playlist' });
+      else if(videoId) list.push({ id:'legacy-yt-video', type:'youtube', videoId, listType:'video' });
+    }catch(e){ /* not a full URL, ignore */ }
+  }
+  return list;
+}
+
+function computeTimelineKey(list, duration){
+  return JSON.stringify((list || []).map(a => ({
+    id: a.id, type: a.type, url: a.url, videoId: a.videoId, listType: a.listType, duration: a.duration
+  }))) + '|' + duration;
+}
+
+function updateDots(){
+  const el = document.getElementById('asset-dots');
+  el.innerHTML = assets.map((_, i) =>
+    `<span class="dot${i === currentIndex ? ' active' : ''}"></span>`
+  ).join('');
+  updateNowTitle();
+}
+
+// Only YouTube assets get a "Now Playing" title — photos show just the
+// dots. Long titles auto-scroll (marquee, like the ticker) only when
+// they'd actually overflow the side panel's width.
+function updateNowTitle(){
+  const wrap = document.getElementById('now-title-wrap');
+  const track = document.getElementById('now-title-track');
+  const a = document.getElementById('now-title-a');
+  const b = document.getElementById('now-title-b');
+  const asset = assets[currentIndex];
+
+  if(!asset || asset.type !== 'youtube'){
+    wrap.style.display = 'none';
+    track.classList.remove('scrolling');
+    return;
+  }
+
+  const title = (asset.customTitle && asset.customTitle.trim())
+    || asset.title
+    || (asset.listType === 'playlist' ? 'YouTube Playlist' : 'YouTube video');
+  wrap.style.display = 'block';
+  a.textContent = title;
+  b.textContent = title;
+  b.style.display = 'none';
+  track.classList.remove('scrolling');
+  track.style.transform = '';
+
+  requestAnimationFrame(() => {
+    const overflowing = a.scrollWidth > wrap.clientWidth;
+    if(overflowing){
+      b.style.display = 'inline';
+      track.style.animationDuration = Math.max(8, title.length * 0.28) + 's';
+      track.classList.add('scrolling');
+    }
+  });
+}
+
+function hideVideoVisual(){
+  document.getElementById('youtube-player').style.display = 'none';
+  if(ytPlayer && ytPlayer.pauseVideo){
+    try{ ytPlayer.pauseVideo(); }catch(e){ /* player not ready yet */ }
+  }
+}
+
+function showImageAsset(asset){
+  hideVideoVisual();
+  const slideEl = document.getElementById('slideshow');
+  // Explicitly drop the previous <img>'s decoded bitmap rather than
+  // relying solely on GC — this runs in a loop 24/7, so releasing each
+  // frame promptly keeps memory flat over long uptimes.
+  const oldImg = slideEl.querySelector('img');
+  if(oldImg) oldImg.src = '';
+  slideEl.style.display = 'block';
+  slideEl.innerHTML = `<img src="${asset.url}" alt="${asset.name || ''}">`;
+  requestAnimationFrame(() => {
+    const img = slideEl.querySelector('img');
+    if(img) img.classList.add('active');
+  });
+  const seconds = asset.duration || slideDuration || 8;
+  advanceTimer = setTimeout(advance, seconds * 1000);
+}
+
+function loadYouTubeAsset(asset){
+  if(!ytReady){
+    pendingVideoAsset = asset;
+    return;
+  }
+  const vars = {
+    autoplay:1, mute:1, controls:0, disablekb:1,
+    modestbranding:1, rel:0, playsinline:1, fs:0
+  };
+  if(asset.listType === 'playlist'){
+    vars.listType = 'playlist';
+    vars.list = asset.videoId;
+  }
+  if(!ytPlayer){
+    ytPlayer = new YT.Player('youtube-player', {
+      width:'100%', height:'100%',
+      videoId: asset.listType === 'playlist' ? undefined : asset.videoId,
+      playerVars: vars,
+      events:{
+        onReady: e => e.target.playVideo(),
+        onStateChange: e => { if(e.data === YT.PlayerState.ENDED) advance(); }
+      }
+    });
+  } else {
+    if(asset.listType === 'playlist'){
+      ytPlayer.loadPlaylist({ list: asset.videoId });
+    } else {
+      ytPlayer.loadVideoById(asset.videoId);
+    }
+    ytPlayer.mute();
+    ytPlayer.playVideo();
+  }
+}
+
+function showVideoAsset(asset){
+  document.getElementById('slideshow').style.display = 'none';
+  document.getElementById('youtube-player').style.display = 'block';
+  loadYouTubeAsset(asset);
+}
+
+function showAsset(index){
+  clearTimeout(advanceTimer);
+  updateDots();
+  const asset = assets[index];
+  if(!asset) return;
+  if(asset.type === 'youtube'){
+    showVideoAsset(asset);
+  } else {
+    showImageAsset(asset);
+  }
+}
+
+function advance(){
+  clearTimeout(advanceTimer);
+  if(assets.length === 0) return;
+  currentIndex = (currentIndex + 1) % assets.length;
+  showAsset(currentIndex);
+}
+
+function startTimeline(){
+  clearTimeout(advanceTimer);
+  const mediaEmpty = document.getElementById('media-empty');
+  if(assets.length === 0){
+    mediaEmpty.style.display = 'flex';
+    document.getElementById('slideshow').style.display = 'none';
+    hideVideoVisual();
+    updateDots();
+    return;
+  }
+  mediaEmpty.style.display = 'none';
+  currentIndex = Math.min(currentIndex, assets.length - 1);
+  showAsset(currentIndex);
+}
+
+// ---------------- Realtime listener ----------------
+const configRef = doc(db, CONFIG_COLLECTION, CONFIG_DOC);
+onSnapshot(configRef, (snap) => {
+  if(!snap.exists()){
+    console.warn("No config document found at", CONFIG_COLLECTION, "/", CONFIG_DOC);
+    return;
+  }
+  const cfg = snap.data();
+
+  applyBranding(cfg);
+  applyColors(cfg.colors);
+  setTicker(cfg.tickerText);
+  setupWeather(cfg);
+  setupReviews(Array.isArray(cfg.reviews) ? cfg.reviews : []);
+
+  assets = Array.isArray(cfg.assets) ? cfg.assets : legacyAssetsFallback(cfg);
+  slideDuration = cfg.slideDuration || 8;
+
+  const key = computeTimelineKey(assets, slideDuration);
+  if(key !== timelineKey){
+    timelineKey = key;
+    currentIndex = 0;
+    startTimeline();
+  }
+}, (err) => {
+  console.error("Config listener error:", err);
+});
+</script>
+</body>
+</html>

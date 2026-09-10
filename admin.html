@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Showroom Display — Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f4f6;
+    --panel:#ffffff;
+    --ink:#15151a;
+    --ink-soft:#6b6b73;
+    --line:#e3e3e8;
+    --accent:#c8102e;
+    --accent-ink:#ffffff;
+    --ok:#1c7a3f;
+    --warn:#a15c00;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  button, .tabs, .tab{
+    user-select:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+  }
+  button:focus:not(:focus-visible){ outline:none; }
+  body{
+    margin:0;
+    font-family:'Inter',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+  }
+
+  /* ---------------- PIN GATE ---------------- */
+  #gate{
+    position:fixed; inset:0;
+    background:#0b0b0d;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+  }
+  #gate.hidden{ display:none; }
+  .gate-card{
+    width:320px;
+    text-align:center;
+    color:#fff;
+  }
+  .gate-card h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:22px;
+    letter-spacing:.04em;
+    margin-bottom:4px;
+  }
+  .gate-card .sub{
+    color:#9a9aa2;
+    font-size:13px;
+    margin-bottom:28px;
+  }
+  #pin-dots{
+    display:flex;
+    justify-content:center;
+    gap:14px;
+    margin-bottom:24px;
+  }
+  #pin-dots .dot{
+    width:14px; height:14px;
+    border-radius:50%;
+    border:2px solid #4a4a52;
+  }
+  #pin-dots .dot.filled{
+    background:var(--accent);
+    border-color:var(--accent);
+  }
+  .keypad{
+    display:grid;
+    grid-template-columns:repeat(3, 64px);
+    gap:12px;
+    justify-content:center;
+  }
+  .keypad button{
+    width:64px; height:64px;
+    border-radius:50%;
+    border:1px solid #333;
+    background:#1a1a1e;
+    color:#fff;
+    font-size:20px;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+  }
+  .keypad button:active{ background:var(--accent); }
+  .keypad button.wide{ border-radius:32px; font-size:13px; }
+  #gate-error{
+    margin-top:16px;
+    color:#ff6b7d;
+    font-size:13px;
+    min-height:16px;
+  }
+
+  /* ---------------- LAYOUT ---------------- */
+  header{
+    background:#0b0b0d;
+    color:#fff;
+    padding:18px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:sticky;
+    top:0;
+    z-index:20;
+  }
+  header .brand{
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:18px;
+    letter-spacing:.05em;
+  }
+  header .brand span{ color:var(--accent); }
+  header .status{
+    font-size:12px;
+    color:#9a9aa2;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  header .status .led{
+    width:8px; height:8px; border-radius:50%;
+    background:var(--ok);
+  }
+
+  .tabs{
+    position:sticky;
+    top:55px;
+    z-index:19;
+    background:var(--bg);
+    display:flex;
+    gap:6px;
+    max-width:960px;
+    margin:0 auto;
+    padding:16px 20px 0;
+    border-bottom:1px solid var(--line);
+    overflow-x:auto;
+  }
+  .tab{
+    flex:0 0 auto;
+    padding:10px 18px;
+    border:none;
+    background:transparent;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    border-radius:8px 8px 0 0;
+    border-bottom:2px solid transparent;
+    white-space:nowrap;
+  }
+  .tab.active{
+    color:var(--ink);
+    border-bottom:2px solid var(--accent);
+    background:var(--panel);
+  }
+
+  main{
+    max-width:960px;
+    margin:0 auto;
+    padding:24px 20px 100px;
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+
+  .tab-panel{ display:flex; flex-direction:column; gap:20px; }
+  .tab-panel[hidden]{ display:none; }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px;
+  }
+  .panel h2{
+    font-family:'Oswald',sans-serif;
+    font-size:15px;
+    font-weight:600;
+    letter-spacing:.03em;
+    margin:0 0 4px;
+  }
+  .panel .desc{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-bottom:18px;
+  }
+
+  label{
+    display:block;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  input[type="text"], input[type="url"], select, textarea{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+    background:#fafafb;
+  }
+  textarea{ resize:vertical; min-height:70px; }
+  input:focus, select:focus, textarea:focus{
+    outline:2px solid var(--accent);
+    outline-offset:1px;
+  }
+
+  .row{ display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div{ flex:1; min-width:180px; }
+
+  .field-group + .field-group{ margin-top:16px; }
+
+  .mode-toggle{
+    display:flex;
+    gap:10px;
+  }
+  .mode-toggle button{
+    flex:1;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:#fafafb;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+    color:var(--ink-soft);
+  }
+  .mode-toggle button.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:var(--accent-ink);
+  }
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 18px;
+    border-radius:8px;
+    border:none;
+    background:var(--ink);
+    color:#fff;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    cursor:pointer;
+  }
+  .btn.accent{ background:var(--accent); }
+  .btn.ghost{
+    background:transparent;
+    color:var(--ink-soft);
+    border:1px solid var(--line);
+  }
+  .btn:disabled{ opacity:.5; cursor:default; }
+
+  .field-actions{
+    margin-top:14px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+
+  .color-grid{
+    display:flex;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  .color-field{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .color-field input[type="color"]{
+    width:44px; height:44px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:2px;
+    background:#fff;
+    cursor:pointer;
+  }
+  .color-field .swatch-label{ font-size:13px; font-weight:600; }
+  .color-field .swatch-hex{ font-size:12px; color:var(--ink-soft); }
+
+  /* ---------------- Global Save bar ---------------- */
+  .save-bar{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    z-index:30;
+    background:#0b0b0d;
+    color:#fff;
+    padding:14px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:20px;
+    box-shadow:0 -4px 16px rgba(0,0,0,.15);
+  }
+  .save-bar-inner{
+    width:100%;
+    max-width:960px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+  }
+  .save-bar-status{
+    font-size:13px;
+    color:#9a9aa2;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .save-bar.dirty .save-bar-status{ color:#ffcf6b; }
+  .save-bar-status .dot{
+    width:7px; height:7px; border-radius:50%;
+    background:#4a4a52;
+  }
+  .save-bar.dirty .save-bar-status .dot{ background:#ffcf6b; }
+
+  /* ---------------- Asset manager ---------------- */
+  .asset-add-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    align-items:stretch;
+  }
+  @media (max-width:640px){
+    .asset-add-row{ grid-template-columns:1fr; }
+  }
+  .dropzone{
+    border:2px dashed var(--line);
+    border-radius:10px;
+    padding:20px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13px;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+  }
+  .dropzone.drag{
+    border-color:var(--accent);
+    background:#fff5f6;
+  }
+  .dropzone input{ display:none; }
+  .dropzone .hint{ margin-top:6px; font-size:11.5px; line-height:1.5; }
+  .yt-add{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    justify-content:center;
+  }
+  .yt-add label{ margin-bottom:0; }
+  .yt-add .btn{ align-self:flex-start; }
+
+  .asset-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:18px;
+  }
+  .asset-row{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 12px;
+    background:#fafafb;
+    cursor:grab;
+  }
+  .asset-row.dragging{ opacity:.4; }
+  .asset-row-main{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .asset-row-extra{
+    padding-left:76px;
+  }
+  .asset-row-extra input{
+    width:100%;
+    padding:6px 8px;
+    font-size:12px;
+  }
+  .asset-row .thumb{
+    width:64px; height:36px;
+    border-radius:6px;
+    overflow:hidden;
+    flex:0 0 auto;
+    background:#0b0b0d;
+    position:relative;
+  }
+  .asset-row .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .asset-row .thumb .yt-play{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:11px; text-align:center;
+    background:rgba(11,11,13,.35);
+  }
+  .asset-row .info{ flex:1; min-width:0; }
+  .asset-row .info .name{
+    font-size:13px; font-weight:600;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .asset-row .info .type{
+    font-size:11px; color:var(--ink-soft);
+    text-transform:uppercase; letter-spacing:.04em;
+  }
+  .asset-row .dur{ width:70px; flex:0 0 auto; }
+  .asset-row .dur input{ width:100%; padding:6px 8px; font-size:12px; }
+  .asset-row .order-btns{ display:flex; flex-direction:column; gap:2px; flex:0 0 auto; }
+  .asset-row .order-btns button{
+    width:22px; height:18px;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:4px;
+    cursor:pointer;
+    font-size:9px;
+    line-height:1;
+    padding:0;
+  }
+  .asset-row .del{
+    width:26px; height:26px;
+    border-radius:50%;
+    border:none;
+    background:rgba(11,11,13,.08);
+    color:var(--ink-soft);
+    font-size:14px;
+    cursor:pointer;
+    flex:0 0 auto;
+    line-height:1;
+  }
+  .asset-row .del:hover{ background:var(--accent); color:#fff; }
+  .asset-row .up-bar{ font-size:12px; color:var(--ink-soft); }
+
+  .empty-note{
+    font-size:13px;
+    color:var(--ink-soft);
+    padding:8px 0;
+  }
+
+  .logo-preview{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-top:12px;
+  }
+  .logo-preview img{
+    max-height:48px;
+    max-width:220px;
+    background:#0b0b0d;
+    border-radius:6px;
+    padding:8px 12px;
+  }
+
+  /* ---------------- Reviews ---------------- */
+  .review-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:18px;
+  }
+  .review-row{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:12px 14px;
+    background:#fafafb;
+    cursor:pointer;
+  }
+  .review-row:hover{ border-color:var(--accent); }
+  .review-row .stars{ color:#d99a00; font-size:13px; flex:0 0 auto; letter-spacing:.1em; }
+  .review-row .body{ flex:1; min-width:0; }
+  .review-row .author{ font-size:13px; font-weight:600; }
+  .review-row .text{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:2px;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .review-row .del{
+    width:26px; height:26px;
+    border-radius:50%;
+    border:none;
+    background:rgba(11,11,13,.08);
+    color:var(--ink-soft);
+    font-size:14px;
+    cursor:pointer;
+    flex:0 0 auto;
+    line-height:1;
+  }
+  .review-row .del:hover{ background:var(--accent); color:#fff; }
+  .review-editing-note{
+    font-size:12px;
+    color:var(--warn);
+    margin-top:8px;
+    display:none;
+  }
+  .review-editing-note.show{ display:block; }
+</style>
+</head>
+<body>
+
+<!-- ============ PIN GATE ============ -->
+<div id="gate">
+  <div class="gate-card">
+    <h1>SHOWROOM <span>DISPLAY</span></h1>
+    <div class="sub">Enter staff PIN to continue</div>
+    <div id="pin-dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <div class="keypad" id="keypad">
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+      <button class="wide" data-k="clear">Clear</button><button data-k="0">0</button><button class="wide" data-k="back">⌫</button>
+    </div>
+    <div id="gate-error"></div>
+  </div>
+</div>
+
+<!-- ============ DASHBOARD ============ -->
+<header>
+  <div class="brand">ACURA <span>DISPLAY CONTROL</span></div>
+  <div class="status"><span class="led"></span><span id="conn-status">Connected</span></div>
+</header>
+
+<div class="tabs" id="tabs">
+  <button type="button" class="tab active" data-tab="slideshow">Slideshow</button>
+  <button type="button" class="tab" data-tab="branding">Branding</button>
+  <button type="button" class="tab" data-tab="reviews">Reviews</button>
+  <button type="button" class="tab" data-tab="ticker-weather">Ticker &amp; Weather</button>
+</div>
+
+<main>
+
+  <!-- ============ TAB: SLIDESHOW ============ -->
+  <div class="tab-panel" data-tab-panel="slideshow">
+    <section class="panel">
+      <h2>Slideshow Assets</h2>
+      <div class="desc">Mix photos and YouTube videos in one slideshow. Drag a row (or use the arrows) to reorder — that's the order they'll play on the TV, looping automatically.</div>
+
+      <div class="asset-add-row">
+        <div class="dropzone" id="dropzone">
+          <div>Drag &amp; drop images here, or click to add photos</div>
+          <div class="hint">
+            JPG or PNG — auto-compressed to fit a shared 900&nbsp;KB budget (roughly 5-8 photos).<br>
+            Recommended aspect ratio ≈ <span id="aspect-hint">1.65:1</span> (e.g. <span id="dim-hint">1650×1000px</span>) so photos fill the screen without cropping.
+          </div>
+          <input type="file" id="file-input" accept="image/*" multiple>
+        </div>
+        <div class="yt-add">
+          <label for="youtube-url">Add a YouTube video or playlist</label>
+          <input type="url" id="youtube-url" placeholder="https://www.youtube.com/watch?v=... or ...?list=...">
+          <button class="btn accent" id="add-youtube" type="button">Add to slideshow</button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label for="slide-duration">Seconds per photo (default)</label>
+        <input type="text" inputmode="numeric" id="slide-duration" placeholder="8" style="max-width:220px;">
+      </div>
+
+      <div class="asset-list" id="asset-list"></div>
+      <div class="empty-note" id="asset-empty" style="display:none;">No assets yet — add photos or a YouTube link above.</div>
+    </section>
+  </div>
+
+  <!-- ============ TAB: BRANDING ============ -->
+  <div class="tab-panel" data-tab-panel="branding" hidden>
+    <section class="panel">
+      <h2>Header</h2>
+      <div class="desc">Shown top-left on the display.</div>
+
+      <label>Header shows</label>
+      <div class="mode-toggle" id="brand-mode-toggle">
+        <button type="button" data-mode="text">Text</button>
+        <button type="button" data-mode="logo">Logo image</button>
+      </div>
+
+      <div id="brand-text-controls" class="field-group">
+        <label for="dealership-name">Dealership name</label>
+        <input type="text" id="dealership-name" placeholder="Acura of Your City">
+      </div>
+
+      <div id="brand-logo-controls" class="field-group" style="display:none;">
+        <div class="dropzone" id="logo-dropzone">
+          <div>Click to choose a logo PNG</div>
+          <div class="hint">Transparent background recommended — shown on a dark panel. Auto-resized, max ~48px tall on screen.</div>
+          <input type="file" id="logo-input" accept="image/*">
+        </div>
+        <div class="logo-preview" id="logo-preview"></div>
+      </div>
+
+      <div class="field-group">
+        <label for="tagline">Tagline (leave blank and save to hide it)</label>
+        <input type="text" id="tagline" placeholder="Precision Crafted Performance">
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Colors</h2>
+      <div class="desc">Background, accent, side-panel text, and the scrolling ticker's own text color.</div>
+      <div class="color-grid">
+        <div class="color-field">
+          <input type="color" id="color-primary" value="#0b0b0d">
+          <div><div class="swatch-label">Background</div><div class="swatch-hex" id="hex-primary">#0b0b0d</div></div>
+        </div>
+        <div class="color-field">
+          <input type="color" id="color-accent" value="#c8102e">
+          <div><div class="swatch-label">Accent</div><div class="swatch-hex" id="hex-accent">#c8102e</div></div>
+        </div>
+        <div class="color-field">
+          <input type="color" id="color-text" value="#f5f5f5">
+          <div><div class="swatch-label">Text</div><div class="swatch-hex" id="hex-text">#f5f5f5</div></div>
+        </div>
+        <div class="color-field">
+          <input type="color" id="color-ticker" value="#0b0b0d">
+          <div><div class="swatch-label">Ticker Text</div><div class="swatch-hex" id="hex-ticker">#0b0b0d</div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ TAB: REVIEWS ============ -->
+  <div class="tab-panel" data-tab-panel="reviews" hidden>
+    <section class="panel">
+      <h2>Google Reviews</h2>
+      <div class="desc">Shown as a slow-rotating carousel in the bottom-right of the display. Add reviews here manually (name, star rating, review text).</div>
+
+      <div class="row">
+        <div>
+          <label for="review-author">Author / reviewer name</label>
+          <input type="text" id="review-author" placeholder="Jane D.">
+        </div>
+        <div style="max-width:200px;">
+          <label for="review-rating">Star rating</label>
+          <select id="review-rating">
+            <option value="5">★★★★★ (5)</option>
+            <option value="4">★★★★☆ (4)</option>
+            <option value="3">★★★☆☆ (3)</option>
+            <option value="2">★★☆☆☆ (2)</option>
+            <option value="1">★☆☆☆☆ (1)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group">
+        <label for="review-text">Review text</label>
+        <textarea id="review-text" rows="3" placeholder="Great service, friendly staff, fast turnaround..."></textarea>
+      </div>
+      <div class="field-actions">
+        <button class="btn accent" id="add-review" type="button">Add review</button>
+        <button class="btn ghost" id="cancel-review-edit" type="button" style="display:none;">Cancel edit</button>
+      </div>
+      <div class="review-editing-note" id="review-editing-note">Editing an existing review — click "Update review" to save your changes to it.</div>
+
+      <div class="review-list" id="review-list"></div>
+      <div class="empty-note" id="review-empty" style="display:none;">No reviews yet — add one above.</div>
+    </section>
+  </div>
+
+  <!-- ============ TAB: TICKER & WEATHER ============ -->
+  <div class="tab-panel" data-tab-panel="ticker-weather" hidden>
+    <section class="panel">
+      <h2>Ticker Text</h2>
+      <div class="desc">The scrolling message shown along the bottom of the TV.</div>
+      <label for="ticker-text">Message</label>
+      <input type="text" id="ticker-text" placeholder="e.g. Ask about 0.9% APR financing on all new 2026 models — see sales for details.">
+    </section>
+
+    <section class="panel">
+      <h2>Weather</h2>
+      <div class="desc">Current conditions and an hourly-style forecast, shown in the side column.</div>
+      <div class="row">
+        <div>
+          <label for="weather-city">City for weather (e.g. "Airdrie, CA" — state/province codes are only reliable for US cities)</label>
+          <input type="text" id="weather-city" placeholder="Airdrie, CA">
+        </div>
+        <div>
+          <label for="weather-units">Units</label>
+          <select id="weather-units">
+            <option value="imperial">Fahrenheit (°F)</option>
+            <option value="metric">Celsius (°C)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group">
+        <label for="weather-key">OpenWeatherMap API key</label>
+        <input type="text" id="weather-key" placeholder="Paste your OpenWeatherMap API key">
+      </div>
+    </section>
+  </div>
+
+</main>
+
+<!-- ============ GLOBAL SAVE BAR ============ -->
+<div class="save-bar" id="save-bar">
+  <div class="save-bar-inner">
+    <div class="save-bar-status" id="save-bar-status"><span class="dot"></span><span id="save-bar-status-text">All changes saved</span></div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn ghost" id="lock-btn" type="button">Lock dashboard</button>
+      <button class="btn accent" id="save-bar-btn" type="button" disabled>Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getFirestore, doc, onSnapshot, setDoc, updateDoc
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { firebaseConfig, CONFIG_COLLECTION, CONFIG_DOC } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const configRef = doc(db, CONFIG_COLLECTION, CONFIG_DOC);
+
+// Declared up front (not down by their usage) so the PIN gate's
+// auto-unlock-from-sessionStorage check below — which can call
+// initDashboardData() synchronously on page load — never runs into a
+// temporal-dead-zone ReferenceError on these.
+//
+// STATE MODEL: `latestConfig` is the last state confirmed saved in
+// Firestore. `draft` is the working copy every field/list edit mutates —
+// nothing touches Firestore until "Save Changes" is clicked. `isDirty`
+// tracks whether draft has diverged from latestConfig.
+let latestConfig = {};
+let draft = null;
+let dashboardInitialized = false;
+let isDirty = false;
+
+function cloneConfig(cfg){
+  return JSON.parse(JSON.stringify(cfg));
+}
+
+function markDirty(){
+  isDirty = true;
+  updateSaveBarUI();
+}
+
+function updateSaveBarUI(){
+  document.getElementById('save-bar-btn').disabled = !isDirty;
+  document.getElementById('save-bar-status-text').textContent = isDirty ? 'Unsaved changes' : 'All changes saved';
+  document.getElementById('save-bar').classList.toggle('dirty', isDirty);
+}
+
+// Native "Leave site?" confirmation on refresh/close/navigate-away while
+// there are unsaved edits. Browsers ignore any custom text here and show
+// their own wording — that's a browser security restriction, not
+// something we can change.
+window.addEventListener('beforeunload', (e) => {
+  if(isDirty){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+// ==================================================================
+// PIN GATE — a simple UI lock, not a substitute for real auth.
+// Anyone with the Firestore write rules open could still write to
+// the database directly. See README "Security notes".
+// ==================================================================
+const REQUIRED_PIN = "8888";
+let pinBuffer = "";
+
+const gate = document.getElementById('gate');
+const dots = document.querySelectorAll('#pin-dots .dot');
+const gateError = document.getElementById('gate-error');
+
+function renderDots(){
+  dots.forEach((d, i) => d.classList.toggle('filled', i < pinBuffer.length));
+}
+
+function checkPin(){
+  if(pinBuffer === REQUIRED_PIN){
+    sessionStorage.setItem('signage-admin-unlocked', '1');
+    unlockDashboard();
+  } else {
+    gateError.textContent = "Incorrect PIN";
+    pinBuffer = "";
+    renderDots();
+    setTimeout(() => { gateError.textContent = ""; }, 1500);
+  }
+}
+
+document.getElementById('keypad').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  const k = btn.dataset.k;
+  if(k === 'clear'){ pinBuffer = ""; }
+  else if(k === 'back'){ pinBuffer = pinBuffer.slice(0, -1); }
+  else if(pinBuffer.length < 4){ pinBuffer += k; }
+  renderDots();
+  if(pinBuffer.length === 4) checkPin();
+});
+
+function unlockDashboard(){
+  gate.classList.add('hidden');
+  initDashboardData();
+}
+
+document.getElementById('lock-btn').addEventListener('click', () => {
+  sessionStorage.removeItem('signage-admin-unlocked');
+  location.reload();
+});
+
+if(sessionStorage.getItem('signage-admin-unlocked') === '1'){
+  unlockDashboard();
+}
+
+// ==================================================================
+// Tabs
+// ==================================================================
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+    document.querySelectorAll('.tab-panel').forEach(p => {
+      p.hidden = p.dataset.tabPanel !== tab.dataset.tab;
+    });
+  });
+});
+
+// ==================================================================
+// Aspect ratio hint — kept in sync with index.html's --side-w/--ticker-h
+// so the guidance shown to staff matches what will actually be cropped.
+// ==================================================================
+const SIDE_W_FRACTION = 0.15;   // matches --side-w:15vw in index.html
+const TICKER_H_FRACTION = 0.082; // matches --ticker-h:8.2vh in index.html
+(function renderAspectHint(){
+  const mediaW = 1920 * (1 - SIDE_W_FRACTION);
+  const mediaH = 1080 * (1 - TICKER_H_FRACTION);
+  const ratio = mediaW / mediaH;
+  document.getElementById('aspect-hint').textContent = ratio.toFixed(2) + ':1';
+  document.getElementById('dim-hint').textContent =
+    Math.round(mediaW / 1.2) + '×' + Math.round(mediaH / 1.2) + 'px';
+})();
+
+// ==================================================================
+// Dashboard data binding
+// ==================================================================
+function initDashboardData(){
+  if(dashboardInitialized) return;
+  dashboardInitialized = true;
+
+  onSnapshot(configRef, async (snap) => {
+    document.getElementById('conn-status').textContent = "Connected";
+    if(!snap.exists()){
+      // First run: create the document with sensible defaults.
+      setDoc(configRef, defaultConfig(), { merge:true });
+      return;
+    }
+    const cfg = snap.data();
+    if(!Array.isArray(cfg.assets)){
+      // One-time migration from the old mode/youtubeUrl/images schema —
+      // preserves whatever a site was already showing before this asset
+      // list existed. Runs once; after this, cfg.assets always exists
+      // (even as []), so it never re-triggers.
+      await migrateLegacyConfig(cfg);
+      return; // onSnapshot fires again with the migrated data
+    }
+    latestConfig = cfg;
+    // Don't clobber an in-progress, unsaved draft if a snapshot arrives
+    // mid-edit (e.g. another device saved something else in the meantime).
+    if(!isDirty){
+      draft = cloneConfig(latestConfig);
+      populateForm(draft);
+    }
+  }, (err) => {
+    console.error(err);
+    document.getElementById('conn-status').textContent = "Connection error";
+  });
+}
+
+async function migrateLegacyConfig(cfg){
+  const migrated = [];
+  if(Array.isArray(cfg.images)){
+    cfg.images.forEach(img => {
+      migrated.push({ id: generateId(), type:'image', url: img.url, name: img.name || 'Photo', duration: null });
+    });
+  }
+  if(cfg.youtubeUrl){
+    const parsed = parseYouTube(cfg.youtubeUrl);
+    if(parsed){
+      let title = parsed.type === 'playlist' ? 'YouTube Playlist' : 'YouTube video';
+      if(parsed.type === 'video'){
+        const fetched = await fetchYouTubeTitle(cfg.youtubeUrl);
+        if(fetched) title = fetched;
+      }
+      migrated.push({
+        id: generateId(),
+        type: 'youtube',
+        videoId: parsed.id,
+        listType: parsed.type,
+        title,
+        customTitle: ''
+      });
+    }
+  }
+  await updateDoc(configRef, { assets: migrated });
+}
+
+function defaultConfig(){
+  return {
+    tickerText: "Welcome to the dealership.",
+    dealershipName: "Acura of Your City",
+    tagline: "Precision Crafted Performance",
+    brandMode: "text",
+    dealershipLogoUrl: null,
+    colors: { primary:"#0b0b0d", accent:"#c8102e", text:"#f5f5f5", ticker:"#0b0b0d" },
+    weatherApiKey: "",
+    weatherCity: "",
+    weatherUnits: "imperial",
+    assets: [],
+    slideDuration: 8,
+    reviews: []
+  };
+}
+
+// Only overwrite a field from an incoming snapshot if the user isn't
+// actively typing in it — onSnapshot can fire from this same client's
+// own writes (e.g. an asset reorder), and we don't want that to blow
+// away an in-progress, unsaved edit in another field.
+function setFieldValue(id, value){
+  const el = document.getElementById(id);
+  if(document.activeElement === el) return;
+  el.value = value;
+}
+
+function populateForm(cfg){
+  setFieldValue('ticker-text', cfg.tickerText || "");
+  setFieldValue('dealership-name', cfg.dealershipName || "");
+  setFieldValue('tagline', cfg.tagline || "");
+  setFieldValue('weather-city', cfg.weatherCity || "");
+  setFieldValue('weather-key', cfg.weatherApiKey || "");
+  setFieldValue('weather-units', cfg.weatherUnits || "imperial");
+  setFieldValue('slide-duration', cfg.slideDuration || 8);
+
+  const colors = cfg.colors || {};
+  if(colors.primary){
+    setFieldValue('color-primary', colors.primary);
+    document.getElementById('hex-primary').textContent = colors.primary;
+  }
+  if(colors.accent){
+    setFieldValue('color-accent', colors.accent);
+    document.getElementById('hex-accent').textContent = colors.accent;
+  }
+  if(colors.text){
+    setFieldValue('color-text', colors.text);
+    document.getElementById('hex-text').textContent = colors.text;
+  }
+  if(colors.ticker){
+    setFieldValue('color-ticker', colors.ticker);
+    document.getElementById('hex-ticker').textContent = colors.ticker;
+  }
+
+  setBrandMode(cfg.brandMode || 'text', false);
+  renderLogoPreview(cfg.dealershipLogoUrl);
+  renderAssetList(cfg.assets || []);
+  renderReviewList(cfg.reviews || []);
+  updateSaveBarUI();
+}
+
+// ==================================================================
+// Every field edit — text, number, select, color, asset add/remove/
+// reorder, logo upload, review add/edit/delete, brand mode — mutates
+// `draft` locally and marks the form dirty. Nothing reaches Firestore
+// until "Save Changes" is clicked; that's the one and only write path
+// for user edits (migration and first-run defaults are separate,
+// system-level writes, not user edits).
+// ==================================================================
+function bindTextField(id, path){
+  document.getElementById(id).addEventListener('input', (e) => {
+    draft[path] = e.target.value;
+    markDirty();
+  });
+}
+bindTextField('tagline', 'tagline');
+bindTextField('ticker-text', 'tickerText');
+bindTextField('dealership-name', 'dealershipName');
+bindTextField('weather-city', 'weatherCity');
+bindTextField('weather-key', 'weatherApiKey');
+
+document.getElementById('weather-units').addEventListener('change', (e) => {
+  draft.weatherUnits = e.target.value;
+  markDirty();
+});
+
+document.getElementById('slide-duration').addEventListener('input', (e) => {
+  const v = parseInt(e.target.value, 10);
+  draft.slideDuration = Number.isFinite(v) && v > 0 ? v : 8;
+  markDirty();
+});
+
+['primary','accent','text','ticker'].forEach(key => {
+  document.getElementById('color-' + key).addEventListener('input', (e) => {
+    document.getElementById('hex-' + key).textContent = e.target.value;
+    draft.colors = draft.colors || {};
+    draft.colors[key] = e.target.value;
+    markDirty();
+  });
+});
+
+document.getElementById('save-bar-btn').addEventListener('click', async () => {
+  if(!isDirty || !draft) return;
+  const btn = document.getElementById('save-bar-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try{
+    await updateDoc(configRef, draft);
+    latestConfig = cloneConfig(draft);
+    isDirty = false;
+  }catch(err){
+    console.error('Save failed:', err);
+    alert('Could not save changes. Please try again.');
+  }finally{
+    btn.textContent = 'Save Changes';
+    updateSaveBarUI();
+  }
+});
+
+// ==================================================================
+// Branding: text vs logo image
+// ==================================================================
+function setBrandMode(mode, fromUser = true){
+  document.querySelectorAll('#brand-mode-toggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  document.getElementById('brand-text-controls').style.display = mode === 'text' ? 'block' : 'none';
+  document.getElementById('brand-logo-controls').style.display = mode === 'logo' ? 'block' : 'none';
+  if(fromUser){
+    draft.brandMode = mode;
+    markDirty();
+  }
+}
+document.querySelectorAll('#brand-mode-toggle button').forEach(b => {
+  b.addEventListener('click', () => setBrandMode(b.dataset.mode));
+});
+
+function renderLogoPreview(url){
+  const el = document.getElementById('logo-preview');
+  if(!url){
+    el.innerHTML = '<div class="empty-note">No logo uploaded yet.</div>';
+    return;
+  }
+  el.innerHTML = `<img src="${url}" alt="Dealership logo"><button type="button" class="btn ghost" id="remove-logo">Remove logo</button>`;
+  document.getElementById('remove-logo').addEventListener('click', () => {
+    draft.dealershipLogoUrl = null;
+    markDirty();
+    renderLogoPreview(null);
+  });
+}
+
+function compressLogo(file, maxDimension){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if(width > maxDimension || height > maxDimension){
+        const scale = maxDimension / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      // PNG (not JPEG) to preserve a transparent background on the dark panel.
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/png'));
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+document.getElementById('logo-dropzone').addEventListener('click', () => {
+  document.getElementById('logo-input').click();
+});
+document.getElementById('logo-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  if(!file.type.startsWith('image/')){
+    alert('Please choose an image file.');
+    return;
+  }
+  try{
+    const url = await compressLogo(file, 320);
+    if(url.length > 250 * 1024){
+      alert('That logo is too complex to compress small enough. Try a simpler PNG.');
+      return;
+    }
+    draft.dealershipLogoUrl = url;
+    setBrandMode('logo', false);
+    draft.brandMode = 'logo';
+    markDirty();
+    renderLogoPreview(url);
+  }catch(err){
+    console.error('Logo upload failed:', err);
+    alert('Could not process that logo image.');
+  }
+});
+
+// ==================================================================
+// Asset list (photos + YouTube, one ordered timeline)
+// ==================================================================
+function generateId(){
+  return 'a_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function commitAssets(next){
+  draft.assets = next;
+  markDirty();
+  renderAssetList(draft.assets);
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+function parseYouTube(url){
+  if(!url) return null;
+  try{
+    const u = new URL(url.trim());
+    const listId = u.searchParams.get('list');
+    const videoId = u.searchParams.get('v') || (u.hostname.includes('youtu.be') ? u.pathname.slice(1) : null);
+    if(listId) return { type:'playlist', id:listId };
+    if(videoId) return { type:'video', id:videoId };
+  }catch(e){
+    // Not a full URL — assume a bare video ID was pasted.
+    if(url.trim().length > 0) return { type:'video', id:url.trim() };
+  }
+  return null;
+}
+
+async function fetchYouTubeTitle(url){
+  try{
+    const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+    if(!res.ok) return null;
+    const data = await res.json();
+    return data.title || null;
+  }catch(e){
+    return null;
+  }
+}
+
+document.getElementById('add-youtube').addEventListener('click', async () => {
+  const raw = document.getElementById('youtube-url').value.trim();
+  const parsed = parseYouTube(raw);
+  if(!parsed){
+    alert('Could not recognize that as a YouTube video or playlist URL.');
+    return;
+  }
+  const btn = document.getElementById('add-youtube');
+  btn.disabled = true;
+  try{
+    const asset = {
+      id: generateId(),
+      type: 'youtube',
+      videoId: parsed.id,
+      listType: parsed.type,
+      title: parsed.type === 'playlist' ? 'YouTube Playlist' : 'YouTube video',
+      customTitle: ''
+    };
+    if(parsed.type === 'video'){
+      const title = await fetchYouTubeTitle(raw);
+      if(title) asset.title = title;
+    }
+    commitAssets([...(draft.assets || []), asset]);
+    document.getElementById('youtube-url').value = '';
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+// ---------------- Images ----------------
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('file-input');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => {
+  handleFiles(fileInput.files);
+  fileInput.value = "";
+});
+
+async function handleFiles(fileList){
+  const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  for(const file of files){
+    await uploadImage(file);
+  }
+}
+
+// All assets (photos as data URLs + tiny YouTube references) live inside
+// the same Firestore config document as compressed data. A Firestore
+// document tops out at 1 MiB, so photos share a conservative budget below
+// that ceiling, leaving room for the rest of the config fields.
+const TOTAL_ASSET_BUDGET_BYTES = 900 * 1024;
+
+function currentAssetBytes(){
+  return JSON.stringify((draft && draft.assets) || []).length;
+}
+
+function compressImage(file, maxDimension, quality){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if(width > maxDimension || height > maxDimension){
+        const scale = maxDimension / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+async function compressToBudget(file, budgetBytes){
+  const attempts = [
+    [1600, 0.7], [1280, 0.6], [1024, 0.5], [800, 0.4], [640, 0.3]
+  ];
+  let dataUrl = null;
+  for(const [maxDimension, quality] of attempts){
+    dataUrl = await compressImage(file, maxDimension, quality);
+    if(dataUrl.length <= budgetBytes) return dataUrl;
+  }
+  return dataUrl; // smallest attempt, even if still over budget
+}
+
+async function uploadImage(file){
+  showUploadingRow(file);
+  try{
+    const remaining = TOTAL_ASSET_BUDGET_BYTES - currentAssetBytes();
+    if(remaining < 20 * 1024){
+      alert(`No room left in the image budget for "${file.name}". Remove an existing photo first.`);
+      return;
+    }
+    const url = await compressToBudget(file, remaining);
+    if(url.length > remaining){
+      alert(`"${file.name}" is too large even after compression to fit the remaining space. Remove a photo first or try a smaller image.`);
+      return;
+    }
+    const asset = { id: generateId(), type:'image', url, name: file.name, duration: null };
+    commitAssets([...(draft.assets || []), asset]);
+  }catch(err){
+    console.error("Upload failed:", err);
+    alert(`Could not process "${file.name}".`);
+  }finally{
+    removeUploadingRow(file);
+  }
+}
+
+function showUploadingRow(file){
+  const list = document.getElementById('asset-list');
+  const row = document.createElement('div');
+  row.className = 'asset-row';
+  row.id = 'uploading-' + file.name.replace(/\W/g,'');
+  row.innerHTML = `<div class="thumb"></div><div class="up-bar">Uploading “${escapeHtml(file.name)}”…</div>`;
+  list.appendChild(row);
+}
+function removeUploadingRow(file){
+  const el = document.getElementById('uploading-' + file.name.replace(/\W/g,''));
+  if(el) el.remove();
+}
+
+// ---------------- Render + reorder ----------------
+function renderAssetList(assets){
+  const list = document.getElementById('asset-list');
+  const empty = document.getElementById('asset-empty');
+  // Keep any in-flight "uploading" placeholders, replace the rest.
+  const placeholders = Array.from(list.querySelectorAll('[id^="uploading-"]'));
+  list.innerHTML = "";
+  placeholders.forEach(p => list.appendChild(p));
+
+  empty.style.display = assets.length === 0 ? 'block' : 'none';
+
+  assets.forEach((asset, index) => {
+    const row = document.createElement('div');
+    row.className = 'asset-row';
+    row.draggable = true;
+
+    const main = document.createElement('div');
+    main.className = 'asset-row-main';
+
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb';
+    if(asset.type === 'image'){
+      thumb.innerHTML = `<img src="${asset.url}" alt="">`;
+    } else if(asset.listType === 'playlist'){
+      thumb.innerHTML = `<div class="yt-play">▶ Playlist</div>`;
+    } else {
+      thumb.innerHTML = `<img src="https://img.youtube.com/vi/${asset.videoId}/mqdefault.jpg" alt=""><div class="yt-play">▶</div>`;
+    }
+
+    const info = document.createElement('div');
+    info.className = 'info';
+    const displayTitle = asset.type === 'image'
+      ? (asset.name || 'Photo')
+      : ((asset.customTitle && asset.customTitle.trim()) || asset.title || 'YouTube');
+    const typeLabel = asset.type === 'image' ? 'Photo' : (asset.listType === 'playlist' ? 'YouTube Playlist' : 'YouTube video');
+    info.innerHTML = `<div class="name">${escapeHtml(displayTitle)}</div><div class="type">${typeLabel}</div>`;
+
+    main.appendChild(thumb);
+    main.appendChild(info);
+
+    if(asset.type === 'image'){
+      const dur = document.createElement('div');
+      dur.className = 'dur';
+      const placeholder = String((draft && draft.slideDuration) || 8) + 's';
+      dur.innerHTML = `<input type="text" inputmode="numeric" placeholder="${placeholder}" value="${asset.duration || ''}" title="Seconds to show this photo (blank = use the default above)">`;
+      dur.querySelector('input').addEventListener('change', (e) => {
+        const v = parseInt(e.target.value, 10);
+        updateAssetField(asset.id, 'duration', Number.isFinite(v) && v > 0 ? v : null);
+      });
+      main.appendChild(dur);
+    }
+
+    const orderBtns = document.createElement('div');
+    orderBtns.className = 'order-btns';
+    orderBtns.innerHTML = `<button type="button" title="Move up">▲</button><button type="button" title="Move down">▼</button>`;
+    orderBtns.children[0].addEventListener('click', () => moveAsset(index, -1));
+    orderBtns.children[1].addEventListener('click', () => moveAsset(index, 1));
+    main.appendChild(orderBtns);
+
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.type = 'button';
+    del.title = 'Remove';
+    del.textContent = '×';
+    del.addEventListener('click', () => removeAsset(asset.id));
+    main.appendChild(del);
+
+    row.appendChild(main);
+
+    if(asset.type === 'youtube'){
+      const extra = document.createElement('div');
+      extra.className = 'asset-row-extra';
+      extra.innerHTML = `<input type="text" placeholder="Custom title for &quot;Now Playing&quot; (optional — blank uses the YouTube title)" value="${escapeHtml(asset.customTitle || '')}">`;
+      extra.querySelector('input').addEventListener('change', (e) => {
+        updateAssetField(asset.id, 'customTitle', e.target.value);
+      });
+      row.appendChild(extra);
+    }
+
+    row.addEventListener('dragstart', (e) => {
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(index));
+    });
+    row.addEventListener('dragend', () => row.classList.remove('dragging'));
+    row.addEventListener('dragover', (e) => e.preventDefault());
+    row.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const fromIndex = Number(e.dataTransfer.getData('text/plain'));
+      reorderAsset(fromIndex, index);
+    });
+
+    list.appendChild(row);
+  });
+}
+
+function updateAssetField(id, field, value){
+  const next = (draft.assets || []).map(a => a.id === id ? { ...a, [field]: value } : a);
+  commitAssets(next);
+}
+
+function moveAsset(index, delta){
+  const arr = [...(draft.assets || [])];
+  const newIndex = index + delta;
+  if(newIndex < 0 || newIndex >= arr.length) return;
+  [arr[index], arr[newIndex]] = [arr[newIndex], arr[index]];
+  commitAssets(arr);
+}
+
+function reorderAsset(fromIndex, toIndex){
+  if(fromIndex === toIndex || Number.isNaN(fromIndex)) return;
+  const arr = [...(draft.assets || [])];
+  const [moved] = arr.splice(fromIndex, 1);
+  arr.splice(toIndex, 0, moved);
+  commitAssets(arr);
+}
+
+function removeAsset(id){
+  if(!confirm('Remove this from the slideshow?')) return;
+  const next = (draft.assets || []).filter(a => a.id !== id);
+  commitAssets(next);
+}
+
+// ==================================================================
+// Reviews manager (add / edit / delete) — same immediate-save pattern
+// as the asset list.
+// ==================================================================
+let editingReviewId = null;
+
+function commitReviews(next){
+  draft.reviews = next;
+  markDirty();
+  renderReviewList(draft.reviews);
+}
+
+function resetReviewForm(){
+  editingReviewId = null;
+  document.getElementById('review-author').value = '';
+  document.getElementById('review-rating').value = '5';
+  document.getElementById('review-text').value = '';
+  document.getElementById('add-review').textContent = 'Add review';
+  document.getElementById('cancel-review-edit').style.display = 'none';
+  document.getElementById('review-editing-note').classList.remove('show');
+}
+
+function startEditReview(r){
+  editingReviewId = r.id;
+  document.getElementById('review-author').value = r.author || '';
+  document.getElementById('review-rating').value = String(r.rating || 5);
+  document.getElementById('review-text').value = r.text || '';
+  document.getElementById('add-review').textContent = 'Update review';
+  document.getElementById('cancel-review-edit').style.display = 'inline-flex';
+  document.getElementById('review-editing-note').classList.add('show');
+  document.getElementById('review-author').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+document.getElementById('cancel-review-edit').addEventListener('click', resetReviewForm);
+
+document.getElementById('add-review').addEventListener('click', () => {
+  const author = document.getElementById('review-author').value.trim();
+  const rating = parseInt(document.getElementById('review-rating').value, 10) || 5;
+  const text = document.getElementById('review-text').value.trim();
+  if(!author || !text){
+    alert('Please fill in both the author name and review text.');
+    return;
+  }
+  let next;
+  if(editingReviewId){
+    next = (draft.reviews || []).map(r => r.id === editingReviewId ? { ...r, author, rating, text } : r);
+  } else {
+    next = [...(draft.reviews || []), { id: generateId(), author, rating, text }];
+  }
+  commitReviews(next);
+  resetReviewForm();
+});
+
+function renderReviewList(reviews){
+  const list = document.getElementById('review-list');
+  const empty = document.getElementById('review-empty');
+  list.innerHTML = '';
+  empty.style.display = reviews.length === 0 ? 'block' : 'none';
+
+  reviews.forEach(r => {
+    const rating = Math.max(0, Math.min(5, Math.round(r.rating || 5)));
+    const row = document.createElement('div');
+    row.className = 'review-row';
+    row.innerHTML = `
+      <div class="stars">${'★'.repeat(rating)}${'☆'.repeat(5 - rating)}</div>
+      <div class="body">
+        <div class="author">${escapeHtml(r.author || 'Anonymous')}</div>
+        <div class="text">${escapeHtml(r.text || '')}</div>
+      </div>
+      <button type="button" class="del" title="Remove">×</button>
+    `;
+    row.querySelector('.body').addEventListener('click', () => startEditReview(r));
+    row.querySelector('.del').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if(!confirm(`Remove ${r.author || 'this'}'s review?`)) return;
+      const next = (draft.reviews || []).filter(x => x.id !== r.id);
+      commitReviews(next);
+      if(editingReviewId === r.id) resetReviewForm();
+    });
+    list.appendChild(row);
+  });
+}
+</script>
+</body>
+</html>
