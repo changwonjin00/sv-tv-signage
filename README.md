@@ -13,6 +13,16 @@ acura-signage/
 └── README.md
 ```
 
+**Live host:** Netlify, at <https://sv-tv-signage.netlify.app>. The same
+code also lives on GitHub at
+<https://github.com/changwonjin00/sv-tv-signage> and mirrors live via
+GitHub Pages at <https://changwonjin00.github.io/sv-tv-signage/> — both
+point at the same Firebase project, so either URL shows the same live
+data. GitHub is version control/backup, not required for the app to run.
+When you make code changes, publish to **both**: drag-and-drop onto
+Netlify (Section 5) *and* `git push` to GitHub (Pages rebuilds
+automatically in under a minute).
+
 ---
 
 ## 1. Create the Firebase project
