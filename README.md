@@ -221,7 +221,11 @@ will ask you to confirm first.
    remove it.
 5. **Ticker & Weather tab:** the scrolling ticker message, the weather
    city/units, and the OpenWeatherMap API key (which also drives the
-   forecast strip under the current conditions).
+   forecast strip under the current conditions). The TV refreshes weather
+   every 30 minutes (backing off to as slow as every 2 hours if requests
+   start failing, e.g. the API key or network is down) and shows an
+   "Updated H:MM" stamp under the forecast so staff can see at a glance
+   how fresh the data is.
 6. When you're happy with your edits across any/all tabs, click **Save
    Changes** once at the bottom — it publishes everything together in a
    single update.
