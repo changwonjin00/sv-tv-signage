@@ -554,7 +554,7 @@
   <button type="button" class="tab active" data-tab="slideshow">Slideshow</button>
   <button type="button" class="tab" data-tab="branding">Branding</button>
   <button type="button" class="tab" data-tab="reviews">Reviews</button>
-  <button type="button" class="tab" data-tab="ticker-weather">Ticker &amp; Weather</button>
+  <button type="button" class="tab" data-tab="ticker-weather">Ticker, Weather &amp; News</button>
 </div>
 
 <main>
@@ -625,7 +625,7 @@
 
     <section class="panel">
       <h2>Colors</h2>
-      <div class="desc">Background, accent, side-panel text, and the scrolling ticker's own text color.</div>
+      <div class="desc">Background, accent, side-panel text, the scrolling ticker's own text color, and the "•" dot in the ACURA•NEWS ticker flag.</div>
       <div class="color-grid">
         <div class="color-field">
           <input type="color" id="color-primary" value="#0b0b0d">
@@ -642,6 +642,10 @@
         <div class="color-field">
           <input type="color" id="color-ticker" value="#0b0b0d">
           <div><div class="swatch-label">Ticker Text</div><div class="swatch-hex" id="hex-ticker">#0b0b0d</div></div>
+        </div>
+        <div class="color-field">
+          <input type="color" id="color-news-dot" value="#c8102e">
+          <div><div class="swatch-label">News Dot</div><div class="swatch-hex" id="hex-news-dot">#c8102e</div></div>
         </div>
       </div>
     </section>
@@ -713,6 +717,13 @@
         <label for="weather-key">OpenWeatherMap API key</label>
         <input type="text" id="weather-key" placeholder="Paste your OpenWeatherMap API key">
       </div>
+    </section>
+
+    <section class="panel">
+      <h2>Edmonton News</h2>
+      <div class="desc">A rotating headline carousel shown under Weather in the side column. Refreshes once an hour — headlines don't need to be second-by-second fresh, and this keeps well within a free API plan's daily request limit.</div>
+      <label for="news-key">News API key (GNews)</label>
+      <input type="text" id="news-key" placeholder="Paste your GNews API key">
     </section>
   </div>
 
@@ -931,10 +942,11 @@ function defaultConfig(){
     tagline: "Precision Crafted Performance",
     brandMode: "text",
     dealershipLogoUrl: null,
-    colors: { primary:"#0b0b0d", accent:"#c8102e", text:"#f5f5f5", ticker:"#0b0b0d" },
+    colors: { primary:"#0b0b0d", accent:"#c8102e", text:"#f5f5f5", ticker:"#0b0b0d", newsDot:"#c8102e" },
     weatherApiKey: "",
     weatherCity: "",
     weatherUnits: "imperial",
+    newsApiKey: "",
     assets: [],
     slideDuration: 8,
     reviews: []
@@ -958,6 +970,7 @@ function populateForm(cfg){
   setFieldValue('weather-city', cfg.weatherCity || "");
   setFieldValue('weather-key', cfg.weatherApiKey || "");
   setFieldValue('weather-units', cfg.weatherUnits || "imperial");
+  setFieldValue('news-key', cfg.newsApiKey || "");
   setFieldValue('slide-duration', cfg.slideDuration || 8);
 
   const colors = cfg.colors || {};
@@ -976,6 +989,10 @@ function populateForm(cfg){
   if(colors.ticker){
     setFieldValue('color-ticker', colors.ticker);
     document.getElementById('hex-ticker').textContent = colors.ticker;
+  }
+  if(colors.newsDot){
+    setFieldValue('color-news-dot', colors.newsDot);
+    document.getElementById('hex-news-dot').textContent = colors.newsDot;
   }
 
   setBrandMode(cfg.brandMode || 'text', false);
@@ -1004,6 +1021,7 @@ bindTextField('ticker-text', 'tickerText');
 bindTextField('dealership-name', 'dealershipName');
 bindTextField('weather-city', 'weatherCity');
 bindTextField('weather-key', 'weatherApiKey');
+bindTextField('news-key', 'newsApiKey');
 
 document.getElementById('weather-units').addEventListener('change', (e) => {
   draft.weatherUnits = e.target.value;
@@ -1023,6 +1041,12 @@ document.getElementById('slide-duration').addEventListener('input', (e) => {
     draft.colors[key] = e.target.value;
     markDirty();
   });
+});
+document.getElementById('color-news-dot').addEventListener('input', (e) => {
+  document.getElementById('hex-news-dot').textContent = e.target.value;
+  draft.colors = draft.colors || {};
+  draft.colors.newsDot = e.target.value;
+  markDirty();
 });
 
 document.getElementById('save-bar-btn').addEventListener('click', async () => {

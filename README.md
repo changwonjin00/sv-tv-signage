@@ -211,9 +211,10 @@ will ask you to confirm first.
      to slideshow**. Video plays muted; a single video plays once through
      then advances, a playlist plays through to its end then advances.
      Each YouTube row also gets a **custom title** field — set this to
-     override what shows in the TV's "Now Playing" line (leave it blank
-     to use the video's real YouTube title). Photos never show a title in
-     "Now Playing," just their position in the dot row.
+     override what shows in the "Now Playing" banner overlaid on the
+     bottom-left corner of the media itself (leave it blank to use the
+     video's real YouTube title). Photos never show a title there, just
+     their position in the dot row.
    - **Reorder** by dragging a row, or using the ▲/▼ buttons.
    - **Seconds per photo (default):** how long each photo shows before
      advancing. Override it per photo with the small field on its row —
@@ -223,20 +224,25 @@ will ask you to confirm first.
    a **Logo image** (upload a PNG — transparent background recommended,
    since it sits on a dark panel). Also sets the **Tagline** shown under
    the header (leave it blank and save to hide that line entirely), and
-   the four **Colors** (background, accent, side-panel text, and the
-   ticker's own text color — the ticker sits on the accent bar, so it
-   needs its own setting to stay readable).
+   five **Colors**: background, accent, side-panel text, the ticker's own
+   text color (the ticker sits on the accent bar, so it needs its own
+   setting to stay readable), and the **News Dot** — the "•" between
+   ACURA and NEWS on the ticker's left flag.
 4. **Reviews tab:** manages the Google-style review carousel shown at the
    bottom of the side column. Add an author name, a 1-5 star rating, and
    the review text; click a review in the list to edit it, or its **×** to
    remove it.
-5. **Ticker & Weather tab:** the scrolling ticker message, the weather
-   city/units, and the OpenWeatherMap API key (which also drives the
-   forecast strip under the current conditions). The TV refreshes weather
-   every 30 minutes (backing off to as slow as every 2 hours if requests
-   start failing, e.g. the API key or network is down) and shows an
-   "Updated H:MM" stamp under the forecast so staff can see at a glance
-   how fresh the data is.
+5. **Ticker, Weather & News tab:**
+   - The scrolling ticker message.
+   - Weather city/units and the OpenWeatherMap API key, which also drives
+     the forecast strip. Refreshes every 30 minutes (backing off to as
+     slow as every 2 hours on repeated failures) and shows an
+     "Updated H:MM" stamp so staff can see at a glance how fresh it is.
+   - **Edmonton News** — a rotating local-headline carousel shown under
+     Weather in the side column. Needs a free [GNews](https://gnews.io)
+     API key. Refreshes once an hour (same backoff-on-failure behavior as
+     weather) — headlines don't need to be minute-fresh, and this keeps
+     well within a free API plan's daily request limit.
 6. When you're happy with your edits across any/all tabs, click **Save
    Changes** once at the bottom — it publishes everything together in a
    single update.

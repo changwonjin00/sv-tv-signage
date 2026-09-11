@@ -12,6 +12,7 @@
     --color-accent:#c8102e;
     --color-text:#f5f5f5;
     --color-ticker-text:#0b0b0d;
+    --color-news-dot:#c8102e;
     --ticker-h:8.2vh;
     --side-w:15vw;
   }
@@ -195,21 +196,21 @@
     margin-top:.8vh;
   }
 
-  .now-playing{
-    display:flex;
-    flex-direction:column;
-    gap:1vh;
-  }
-  .now-playing .label{
-    font-size:1.2vh;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    color:rgba(245,245,245,.45);
+  /* ---------- NOW PLAYING (overlay on the media itself) ---------- */
+  .now-playing-overlay{
+    position:absolute;
+    left:1.3vw; bottom:1.6vh;
+    max-width:34vw;
+    background:rgba(11,11,13,.6);
+    padding:.9vh 1.1vw;
+    border-radius:8px;
+    z-index:3;
   }
   .now-title-wrap{
     overflow:hidden;
     position:relative;
     height:1.7vh;
+    margin-bottom:.7vh;
   }
   .now-title-track{
     position:absolute;
@@ -224,7 +225,7 @@
   .now-title-track span{
     font-size:1.4vh;
     font-weight:600;
-    color:rgba(245,245,245,.9);
+    color:#fff;
     padding-right:3vw;
   }
   .asset-dots{
@@ -235,10 +236,45 @@
   .asset-dots .dot{
     width:.9vh; height:.9vh;
     border-radius:50%;
-    background:rgba(245,245,245,.22);
+    background:rgba(245,245,245,.3);
     transition:background .3s;
   }
   .asset-dots .dot.active{ background:var(--color-accent); }
+
+  /* ---------- EDMONTON NEWS ---------- */
+  .news-widget{
+    padding-top:2vh;
+    border-top:1px solid rgba(255,255,255,.12);
+  }
+  .news-widget .label{
+    font-size:1.2vh;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:rgba(245,245,245,.45);
+    margin-bottom:1vh;
+  }
+  .news-card{
+    opacity:0;
+    transition:opacity 1s ease-in-out;
+  }
+  .news-card.active{ opacity:1; }
+  .news-card .headline{
+    font-size:1.35vh;
+    font-weight:600;
+    line-height:1.45;
+    color:rgba(245,245,245,.92);
+    display:-webkit-box;
+    -webkit-line-clamp:4;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .news-card .source{
+    font-size:1.05vh;
+    color:rgba(245,245,245,.5);
+    margin-top:.6vh;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
 
   /* ---------- REVIEWS ---------- */
   .reviews-widget{
@@ -315,7 +351,7 @@
     color:#fff;
     z-index:2;
   }
-  .ticker-flag span{ color:var(--color-accent); }
+  .ticker-flag span{ color:var(--color-news-dot); }
   .ticker-viewport{
     flex:1 1 auto;
     height:100%;
@@ -357,6 +393,15 @@
     </div>
     <div id="youtube-player"></div>
     <div id="slideshow"></div>
+    <div class="now-playing-overlay" id="now-playing-overlay" style="display:none;">
+      <div class="now-title-wrap" id="now-title-wrap" style="display:none;">
+        <div class="now-title-track" id="now-title-track">
+          <span id="now-title-a"></span>
+          <span id="now-title-b" style="display:none;"></span>
+        </div>
+      </div>
+      <div class="asset-dots" id="asset-dots"></div>
+    </div>
   </div>
 
   <aside id="side-col">
@@ -382,15 +427,9 @@
       <div class="updated" id="weather-updated"></div>
     </div>
 
-    <div class="now-playing">
-      <div class="label">Now Playing</div>
-      <div class="now-title-wrap" id="now-title-wrap" style="display:none;">
-        <div class="now-title-track" id="now-title-track">
-          <span id="now-title-a"></span>
-          <span id="now-title-b" style="display:none;"></span>
-        </div>
-      </div>
-      <div class="asset-dots" id="asset-dots"></div>
+    <div class="news-widget" id="news-widget" style="display:none;">
+      <div class="label">Edmonton News</div>
+      <div class="news-card" id="news-card"></div>
     </div>
 
     <div class="reviews-widget" id="reviews-widget" style="display:none;">
@@ -602,6 +641,7 @@ function applyColors(colors){
   if(colors?.accent) root.setProperty('--color-accent', colors.accent);
   if(colors?.text) root.setProperty('--color-text', colors.text);
   if(colors?.ticker) root.setProperty('--color-ticker-text', colors.ticker);
+  if(colors?.newsDot) root.setProperty('--color-news-dot', colors.newsDot);
 }
 
 // ---------------- Branding (dealership name text or logo image) ----------------
@@ -677,6 +717,97 @@ function setupReviews(list){
 }
 
 // ==================================================================
+// Edmonton news — headlines fetched on a long, self-scheduling interval
+// (60 min, backing off further on failures) and rotated locally with no
+// extra network calls in between, same low-data pattern as weather.
+// ==================================================================
+let newsHeadlines = [];
+let newsRotateTimer = null;
+let newsFetchTimer = null;
+let newsFailCount = 0;
+let newsIndex = 0;
+let lastNewsKey = "";
+const NEWS_BASE_INTERVAL_MS = 60 * 60 * 1000;
+const NEWS_MAX_INTERVAL_MS = 4 * 60 * 60 * 1000;
+
+function renderNewsCard(){
+  const widget = document.getElementById('news-widget');
+  const card = document.getElementById('news-card');
+  if(newsHeadlines.length === 0){
+    widget.style.display = 'none';
+    return;
+  }
+  widget.style.display = 'block';
+  const item = newsHeadlines[newsIndex % newsHeadlines.length];
+  card.classList.remove('active');
+  setTimeout(() => {
+    card.innerHTML = `
+      <div class="headline">${escapeHtml(item.headline || '')}</div>
+      <div class="source">${escapeHtml(item.source || '')}</div>
+    `;
+    requestAnimationFrame(() => card.classList.add('active'));
+  }, card.innerHTML ? 400 : 0);
+}
+
+function setupNewsRotation(list){
+  newsHeadlines = (list || []).filter(item => item.headline);
+  newsIndex = 0;
+  if(newsRotateTimer) clearInterval(newsRotateTimer);
+  renderNewsCard();
+  if(newsHeadlines.length > 1){
+    newsRotateTimer = setInterval(() => {
+      newsIndex = (newsIndex + 1) % newsHeadlines.length;
+      renderNewsCard();
+    }, 9000);
+  }
+}
+
+async function refreshNews(cfg){
+  const apiKey = cfg.newsApiKey;
+  if(!apiKey){
+    document.getElementById('news-widget').style.display = 'none';
+    return true; // not configured — not an error, no backoff
+  }
+  try{
+    const url = `https://gnews.io/api/v4/search?q=Edmonton&lang=en&country=ca&max=8&apikey=${apiKey}`;
+    const res = await fetch(url);
+    const data = await res.json().catch(() => null);
+    if(!res.ok) throw new Error((data && data.errors && data.errors[0]) || `News request failed (${res.status})`);
+    const articles = Array.isArray(data.articles) ? data.articles : [];
+    setupNewsRotation(articles.map(a => ({ headline: a.title, source: a.source?.name || '' })));
+    return true;
+  }catch(err){
+    console.error('News error:', err);
+    return false;
+  }
+}
+
+function scheduleNews(cfg){
+  if(newsFetchTimer) clearTimeout(newsFetchTimer);
+  const delay = Math.min(
+    NEWS_BASE_INTERVAL_MS * Math.pow(2, newsFailCount),
+    NEWS_MAX_INTERVAL_MS
+  );
+  newsFetchTimer = setTimeout(async () => {
+    const ok = await refreshNews(cfg);
+    newsFailCount = ok ? 0 : newsFailCount + 1;
+    scheduleNews(cfg);
+  }, delay);
+}
+
+function setupNews(cfg){
+  const key = cfg.newsApiKey || "";
+  if(key === lastNewsKey) return;
+  lastNewsKey = key;
+  newsFailCount = 0;
+  if(newsFetchTimer) clearTimeout(newsFetchTimer);
+  refreshNews(cfg).then(ok => {
+    newsFailCount = ok ? 0 : 1;
+    scheduleNews(cfg);
+  });
+}
+
+// ==================================================================
 // Asset timeline — a single ordered list mixing photos and YouTube
 // videos/playlists. Photos advance on a timer; videos advance when
 // YouTube reports they've ended.
@@ -734,6 +865,7 @@ function computeTimelineKey(list, duration){
 }
 
 function updateDots(){
+  document.getElementById('now-playing-overlay').style.display = assets.length ? 'block' : 'none';
   const el = document.getElementById('asset-dots');
   el.innerHTML = assets.map((_, i) =>
     `<span class="dot${i === currentIndex ? ' active' : ''}"></span>`
@@ -907,6 +1039,7 @@ onSnapshot(configRef, (snap) => {
   applyColors(cfg.colors);
   setTicker(cfg.tickerText);
   setupWeather(cfg);
+  setupNews(cfg);
   setupReviews(Array.isArray(cfg.reviews) ? cfg.reviews : []);
 
   assets = Array.isArray(cfg.assets) ? cfg.assets : legacyAssetsFallback(cfg);
