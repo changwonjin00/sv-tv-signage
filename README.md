@@ -176,6 +176,17 @@ Any device with a modern browser works — a cheap Fire TV Stick / Chromebox
    boot (most digital-signage players and kiosk browser extensions
    support this natively).
 
+**Built-in resilience for low-power devices (e.g. Fire TV Stick):**
+- YouTube playback is capped at **720p** — hours of 1080p decode on a
+  weak/low-RAM device is the most likely cause of a browser crash on a
+  24/7 display, so this trades some sharpness for real stability. (This
+  is YouTube's own "suggested quality" API, so it's honored in the vast
+  majority of cases but isn't a hard guarantee on YouTube's end.)
+- The page **automatically reloads every 6 hours**, clearing out any
+  memory buildup before it can accumulate into a crash, rather than
+  waiting for one to happen. (`admin.html` never does this — an
+  unexpected reload could wipe out an in-progress unsaved edit there.)
+
 ---
 
 ## 7. Using the admin dashboard

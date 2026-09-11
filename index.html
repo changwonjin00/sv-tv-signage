@@ -419,6 +419,15 @@ import { firebaseConfig, CONFIG_COLLECTION, CONFIG_DOC } from "./firebase-config
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// ---------------- Auto-reload (crash-prevention safety net) ----------------
+// This page runs 24/7 on kiosk hardware (Fire TV Stick browsers, mini
+// PCs, etc.) that can be memory- and CPU-constrained, especially with a
+// YouTube video decoding for hours at a stretch. A full reload every 6
+// hours clears any accumulated browser-side state before it can build up
+// into a crash, rather than waiting for one to happen. Admin.html
+// intentionally does NOT do this — staff may have unsaved edits open.
+setTimeout(() => location.reload(), 6 * 60 * 60 * 1000);
+
 // ---------------- Clock ----------------
 function tickClock(){
   const now = new Date();
@@ -793,6 +802,22 @@ function showImageAsset(asset){
   advanceTimer = setTimeout(advance, seconds * 1000);
 }
 
+// Caps streaming quality at 720p — big reduction in decode/memory load
+// on low-power kiosk hardware (e.g. a Fire TV Stick's browser), plus
+// less bandwidth. YouTube's setPlaybackQuality is only "advisory," so
+// this is actively re-asserted via onPlaybackQualityChange below rather
+// than set once and hoped for.
+const MAX_PLAYBACK_QUALITY = 'hd720';
+const QUALITY_ORDER = ['tiny','small','medium','large','hd720','hd1080','hd1440','hd2160','highres'];
+
+function capQuality(player){
+  try{ player.setPlaybackQuality(MAX_PLAYBACK_QUALITY); }catch(e){ /* not ready yet */ }
+}
+
+function isAboveQualityCap(quality){
+  return QUALITY_ORDER.indexOf(quality) > QUALITY_ORDER.indexOf(MAX_PLAYBACK_QUALITY);
+}
+
 function loadYouTubeAsset(asset){
   if(!ytReady){
     pendingVideoAsset = asset;
@@ -812,8 +837,9 @@ function loadYouTubeAsset(asset){
       videoId: asset.listType === 'playlist' ? undefined : asset.videoId,
       playerVars: vars,
       events:{
-        onReady: e => e.target.playVideo(),
-        onStateChange: e => { if(e.data === YT.PlayerState.ENDED) advance(); }
+        onReady: e => { e.target.playVideo(); capQuality(e.target); },
+        onStateChange: e => { if(e.data === YT.PlayerState.ENDED) advance(); },
+        onPlaybackQualityChange: e => { if(isAboveQualityCap(e.data)) capQuality(e.target); }
       }
     });
   } else {
@@ -824,6 +850,7 @@ function loadYouTubeAsset(asset){
     }
     ytPlayer.mute();
     ytPlayer.playVideo();
+    capQuality(ytPlayer);
   }
 }
 
