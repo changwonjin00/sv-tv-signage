@@ -55,7 +55,11 @@
   #slideshow img{
     position:absolute; inset:0;
     width:100%; height:100%;
-    object-fit:cover;
+    /* contain, not cover: a photo is scaled down to fit fully inside the
+       frame at its own aspect ratio (letterboxed on the black background
+       if needed) rather than cropped — this matters for portrait photos,
+       which would otherwise get most of their width sliced off. */
+    object-fit:contain;
     opacity:0;
     transition:opacity 1.2s ease-in-out;
   }
@@ -184,6 +188,11 @@
     font-size:1.2vh;
     font-weight:600;
     color:rgba(245,245,245,.85);
+  }
+  .weather .updated{
+    font-size:1vh;
+    color:rgba(245,245,245,.4);
+    margin-top:.8vh;
   }
 
   .now-playing{
@@ -370,6 +379,7 @@
       <div class="cond" id="weather-cond"></div>
       <div class="lohi" id="weather-lohi"></div>
       <div class="forecast-row" id="forecast-row"></div>
+      <div class="updated" id="weather-updated"></div>
     </div>
 
     <div class="now-playing">
@@ -484,6 +494,7 @@ async function refreshWeather(cfg){
   const lohiEl = document.getElementById('weather-lohi');
   const iconEl = document.getElementById('weather-icon');
   const forecastEl = document.getElementById('forecast-row');
+  const updatedEl = document.getElementById('weather-updated');
 
   if(!apiKey || !city){
     cityEl.textContent = "Weather not configured";
@@ -492,6 +503,7 @@ async function refreshWeather(cfg){
     lohiEl.textContent = "";
     iconEl.style.display = "none";
     forecastEl.innerHTML = "";
+    updatedEl.textContent = "";
     return true; // not an error — just unconfigured — so this doesn't trigger backoff
   }
 
@@ -512,6 +524,7 @@ async function refreshWeather(cfg){
       iconEl.style.display = "block";
     }
     await refreshForecast(loc, units, apiKey);
+    updatedEl.textContent = "Updated " + new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
     return true;
   }catch(err){
     console.error(err);
@@ -522,17 +535,20 @@ async function refreshWeather(cfg){
     lohiEl.textContent = "";
     iconEl.style.display = "none";
     forecastEl.innerHTML = "";
+    // Leave the "Updated ..." stamp from the last successful fetch in
+    // place rather than clearing it — it's still useful context during
+    // a transient outage, and gets overwritten the moment one succeeds.
     return false;
   }
 }
 
 // Self-scheduling refresh (not setInterval) so a run of failures backs
-// off instead of hammering the API/network every 10 minutes regardless.
-// Base interval 10 min; doubles per consecutive failure up to a 60 min
-// ceiling, and resets to 10 min the moment a request succeeds again.
+// off instead of hammering the API/network every 30 minutes regardless.
+// Base interval 30 min; doubles per consecutive failure up to a 2 hour
+// ceiling, and resets to 30 min the moment a request succeeds again.
 let weatherFailCount = 0;
-const WEATHER_BASE_INTERVAL_MS = 10 * 60 * 1000;
-const WEATHER_MAX_INTERVAL_MS = 60 * 60 * 1000;
+const WEATHER_BASE_INTERVAL_MS = 30 * 60 * 1000;
+const WEATHER_MAX_INTERVAL_MS = 2 * 60 * 60 * 1000;
 
 function scheduleWeather(cfg){
   if(weatherTimer) clearTimeout(weatherTimer);
